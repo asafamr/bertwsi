@@ -1,7 +1,7 @@
 ### Word Sense Induction with BERT
 
 
-a follow up to https://github.com/asafamr/SymPatternWSI , adapted to BERT
+a follow up to https://github.com/asafamr/SymPatternWSI , adapted to BERT.<br>
 follow the perquisites installation instructions in that rep.
 
 paper: will soon be uploaded to arxiv
