@@ -108,7 +108,7 @@ class WordSenseInductor:
             generate_sem_eval_2010_no_tokenization('./resources/SemEval-2010/test_data'),
             wsisettings,
             lambda inst2sense, outkey:
-            evaluate_labeling_2010('./resources/SemEval-2010', inst2sense, outkey),
+            evaluate_labeling_2010('./resources/SemEval-2010/evaluation/', inst2sense, outkey),
             print_progress=print_progress)
 
         fscore = scores2010['all']['FScore']

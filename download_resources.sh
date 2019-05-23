@@ -1,10 +1,8 @@
 #!/usr/bin/env bash
 mkdir -p resources
 echo downloading SemEval 2013 task 13 data and evaluation code...
-wget -N https://www.cs.york.ac.uk/semeval-2013/task13/data/uploads/semeval-2013-task-13-test-data.zip -P resources
+wget https://www.cs.york.ac.uk/semeval-2013/task13/data/uploads/semeval-2013-task-13-test-data.zip -P resources
 
-wget -N https://www.cs.york.ac.uk/semeval2010_WSI/files/evaluation.zip -P resources -O se2010eval.zip
-wget -N https://www.cs.york.ac.uk/semeval2010_WSI/files/test_data.tar.gz P resources -O se2010eval.zip
 # unzip might not be installed
 python - <<EOF
 import zipfile
@@ -13,8 +11,8 @@ with zipfile.ZipFile("./resources/semeval-2013-task-13-test-data.zip","r") as zi
 EOF
 
 echo downloading SemEval 2010 task 14 data and evaluation code...
-wget -N https://www.cs.york.ac.uk/semeval2010_WSI/files/evaluation.zip  -O resources/se2010eval.zip
-wget -N https://www.cs.york.ac.uk/semeval2010_WSI/files/test_data.tar.gz  -O resources/se2010test_data.tar.gz
+wget https://www.cs.york.ac.uk/semeval2010_WSI/files/evaluation.zip  -O resources/se2010eval.zip
+wget https://www.cs.york.ac.uk/semeval2010_WSI/files/test_data.tar.gz  -O resources/se2010test_data.tar.gz
 mkdir -p resources/SemEval-2010
 python - <<EOF
 import zipfile

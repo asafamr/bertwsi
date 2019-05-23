@@ -18,10 +18,10 @@ if __name__ == '__main__':
 
     # --------------- modify default settings
 
-    settings['debug_dir'] = 'draft'
-
-    run_name = strftime("%m%d-%H%M%S") + '-wth72'
-    settings['run_name'] = run_name
+    # settings['debug_dir'] = 'draft'
+    #
+    # run_name = strftime("%m%d-%H%M%S") + '-wth72'
+    # settings['run_name'] = run_name
 
     # --------------- finalizing settings
     settings = WSISettings(**settings)

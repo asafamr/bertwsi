@@ -1,7 +1,7 @@
 import spacy
 import os
 from xml.etree import ElementTree
-from typing import Dict,Tuple
+from typing import Dict, Tuple
 import tempfile
 import subprocess
 import logging
@@ -68,8 +68,9 @@ def generate_sem_eval_2010_no_tokenization(dir_path: str):
             cached = pickle.load(fin)
     else:
         nlp = spacy.load('en', disable=['ner'])
-        additional_mapping = {'stuck': 'stick', 'straightened': 'straighten', 'shaving': 'shave', 'swam': 'swim',
-                              'figger': 'figure',
+        additional_mapping = {'stuck': 'stick', 'straightened': 'straighten', 'shaved': 'shave', 'shaving': 'shave',
+                              'swam': 'swim', 'figgere': 'figure', 'violating': 'violate', 'lain': 'lie', 'lied': 'lie',
+                              'figger': 'figure', 'swore': 'swear', 'swears': 'swear', 'observed': 'observe',
                               'committed': 'commit', 'divided': 'divide', 'lie': 'lay', 'lay': 'lie', 'lah': 'lie',
                               'swimming': 'swim'}
 
@@ -80,7 +81,7 @@ def generate_sem_eval_2010_no_tokenization(dir_path: str):
                 w = w[:-3]
             elif w[-2:] == 'ed':
                 w = w[:-2]
-            return w
+            return w.lower()
 
         for root_dir, dirs, files in os.walk(dir_path):  # "../paper-menuscript/resources/SemEval-2010/test_data/"):
             #     path = root.split(os.sep)
@@ -96,29 +97,37 @@ def generate_sem_eval_2010_no_tokenization(dir_path: str):
 
                         # pres_sent = child.text
                         target_sent = child[0].text
-                        post_sent = child[0].tail
+                        # post_sent = child[0].tail - use only
 
                         # if not pres_sent:
                         #     pres_sent = ''
                         # if not post_sent:
                         #     post_sent = ''
 
+                        # the word is not marked here so we need to find the lemma within our sentence
+                        # - this does the trick for bert uncased in SE2010
                         parsed = nlp(target_sent)
                         first_occur_idx = None
                         for idx, w in enumerate(parsed):
                             token_lemma = basic_stem(
-                                w.lemma_)  # we need to find the lemma withing our sentence - this does the trick
-                            if token_lemma == stemmed_lemma or additional_mapping.get(w.lemma_) == lemma:
+                                w.lemma_)
+                            if token_lemma == stemmed_lemma or additional_mapping.get(w.lemma_.lower()) == lemma:
                                 first_occur_idx = idx
                                 break
                         if first_occur_idx is None:
+                            print(
+                                'could not find the correct lemma -probably spacy\'s lemmatizer had changed. '
+                                'add the lemma from here to additional_mapping:')
                             print(file, [x.lemma_ for x in parsed], target_sent)
+                            # e.g. if you see lie.v was broken and in the list of lemmas you find 'lain'
+                            # - add a mapping from 'lain' -> 'lie' in additional_mapping map above
+                            raise Exception('Could not pin-point lemma in SemEval sentence')
 
                         # pre = pres_sent + ' ' + ''.join(parsed[i].string for i in range(first_occur_idx))
-                        pre =''.join(parsed[i].string for i in range(first_occur_idx))
+                        pre = ''.join(parsed[i].string for i in range(first_occur_idx))
                         ambig = parsed[first_occur_idx].text
                         post = ''.join(
-                            parsed[i].string for i in range(first_occur_idx + 1, len(parsed)))# + ' ' + post_sent
+                            parsed[i].string for i in range(first_occur_idx + 1, len(parsed)))  # + ' ' + post_sent
 
                         pre = pre.replace(" 's ", "'s ")
                         post = post.replace(" 's ", "'s ")
@@ -130,29 +139,29 @@ def generate_sem_eval_2010_no_tokenization(dir_path: str):
             logging.exception(e)
     return cached
 
-def get_n_senses_corr(gold_key,new_key):
-    senses_lemma_gold=defaultdict(set)
-    senses_lemma_sys=defaultdict(set)
-    for dic,key in [(senses_lemma_gold,gold_key),(senses_lemma_sys,new_key)]:
-        with open(key,'r') as fin:
+
+def get_n_senses_corr(gold_key, new_key):
+    senses_lemma_gold = defaultdict(set)
+    senses_lemma_sys = defaultdict(set)
+    for dic, key in [(senses_lemma_gold, gold_key), (senses_lemma_sys, new_key)]:
+        with open(key, 'r') as fin:
             for line in fin:
-                split=line.split()
-                lemma=split[0]
+                split = line.split()
+                lemma = split[0]
                 senses = [x.split('/')[0] for x in split[2:]]
                 dic[lemma].update(senses)
-    oredered_lemmas=list(senses_lemma_gold.keys())
+    oredered_lemmas = list(senses_lemma_gold.keys())
     corr = {}
-    for ending,name in [('','all'),('v','VERB'),('n','NOUN'),('j','ADJ')]:
-        g=[len(senses_lemma_gold[x]) for x in oredered_lemmas if x.endswith(ending)]
-        n=[len(senses_lemma_sys[x]) for x in oredered_lemmas if x.endswith(ending)]
-        c=spearmanr(g,n)
-        corr[name]=c.correlation,c.pvalue
+    for ending, name in [('', 'all'), ('v', 'VERB'), ('n', 'NOUN'), ('j', 'ADJ')]:
+        g = [len(senses_lemma_gold[x]) for x in oredered_lemmas if x.endswith(ending)]
+        n = [len(senses_lemma_sys[x]) for x in oredered_lemmas if x.endswith(ending)]
+        c = spearmanr(g, n)
+        corr[name] = c.correlation, c.pvalue
     return corr
 
 
-
 def evaluate_labeling_2013(dir_path, labeling: Dict[str, Dict[str, int]], key_path: str = None) \
-        -> Tuple[Dict[str, Dict[str, float]],Tuple]:
+        -> Tuple[Dict[str, Dict[str, float]], Tuple]:
     """
     labeling example : {'become.v.3': {'become.sense.1':3,'become.sense.5':17} ... }
     means instance become.v.3' is 17/20 in sense 'become.sense.5' and 3/20 in sense 'become.sense.1'
@@ -201,7 +210,7 @@ def evaluate_labeling_2013(dir_path, labeling: Dict[str, Dict[str, int]], key_pa
             lines.append('%s %s %s' % (lemma_pos, instance_id, clusters_str))
         fout.write('\n'.join(lines))
         fout.flush()
-        gold_key_path=os.path.join(dir_path, 'keys/gold/all.key')
+        gold_key_path = os.path.join(dir_path, 'keys/gold/all.key')
         scores = get_scores(gold_key_path,
                             fout.name)
         if key_path:
@@ -209,21 +218,21 @@ def evaluate_labeling_2013(dir_path, labeling: Dict[str, Dict[str, int]], key_pa
             with open(key_path, 'w', encoding="utf-8") as fout2:
                 fout2.write('\n'.join(lines))
 
-        correlation = get_n_senses_corr(gold_key_path,fout.name)
+        correlation = get_n_senses_corr(gold_key_path, fout.name)
 
-    return scores,correlation
+    return scores, correlation
 
 
 def evaluate_labeling_2010(dir_path, labeling: Dict[str, Dict[str, int]], key_path: str = None) \
-        -> Tuple[Dict[str,Dict[str, float]],Tuple]:
+        -> Tuple[Dict[str, Dict[str, float]], Tuple]:
     """
     similar to 2013 eval code, but only use top sense for each instnace
     """
     logging.info('starting evaluation key_path: %s' % key_path)
     unsup_key = os.path.join(dir_path, 'unsup_eval/keys/all.key')
+
     def get_scores(eval_key):
         ret = defaultdict(dict)
-
 
         for metric, jar in [
             ('FScore', os.path.join(dir_path, 'unsup_eval/fscore.jar')),
@@ -260,4 +269,4 @@ def evaluate_labeling_2010(dir_path, labeling: Dict[str, Dict[str, int]], key_pa
             with open(key_path, 'w', encoding="utf-8") as fout2:
                 fout2.write('\n'.join(lines))
             correlation = get_n_senses_corr(unsup_key, fout.name)
-    return scores,correlation
+    return scores, correlation

@@ -43,7 +43,7 @@ class LMBert(SLM):
             model.eval()
             self.bert = model
 
-            self.tokenizer = tokenization.BertTokenizer.from_pretrained('/home/nlp/asafam/bertwsd/uncased_L-24_H-1024_A-16/vocab.txt',)
+            self.tokenizer = tokenization.BertTokenizer.from_pretrained(bert_model)
 
             self.max_sent_len = model.config.max_position_embeddings
             # self.max_sent_len = config.max_position_embeddings
