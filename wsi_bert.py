@@ -34,6 +34,7 @@ if __name__ == '__main__':
     startmsg = startmsg.strip()
 
     lm = LMBert(settings.cuda_device, settings.bert_model,
+                spacy_lang=settings.spacy_lang,
                 max_batch_size=settings.max_batch_size)
 
     if settings.debug_dir:
