@@ -141,7 +141,7 @@ class LMBert(SLM):
 
                 torch_mask = torch_input_ids != 0
 
-                logits_all_tokens = self.bert(torch_input_ids, attention_mask=torch_mask)
+                logits_all_tokens = self.bert(torch_input_ids, attention_mask=torch_mask).logits
 
                 logits_target_tokens = torch.zeros((len(batch_sents), logits_all_tokens.shape[2])).to(self.device)
                 for i in range(0, len(batch_sents)):
