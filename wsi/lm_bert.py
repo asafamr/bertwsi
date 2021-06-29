@@ -26,7 +26,7 @@ def get_batches(from_iter, group_size):
 
 class LMBert(SLM):
 
-    def __init__(self, cuda_device, bert_model, max_batch_size=20):
+    def __init__(self, cuda_device, bert_model, spacy_lang="en", max_batch_size=20):
         super().__init__()
         logging.info(
             'creating bert in device %d. bert ath %s'
@@ -54,7 +54,7 @@ class LMBert(SLM):
             self.original_vocab = []
 
             import spacy
-            nlp = spacy.load("en", disable=['ner', 'parser'])
+            nlp = spacy.load(spacy_lang, disable=['ner', 'parser'])
             self._lemmas_cache = {}
             self._spacy = nlp
             for spacyed in tqdm(
