@@ -2,7 +2,7 @@ from collections import namedtuple
 
 WSISettings = namedtuple('WSISettings', ['n_represents', 'n_samples_per_rep', 'cuda_device', 'debug_dir',
                                          'disable_tfidf', 'disable_lemmatization', 'run_name', 'patterns',
-                                         'min_sense_instances', 'bert_model',
+                                         'min_sense_instances', 'bert_model', 'spacy_lang',
                                          'max_batch_size', 'prediction_cutoff', 'max_number_senses',
                                          ])
 
@@ -26,6 +26,7 @@ DEFAULT_PARAMS = WSISettings(
     # sense clusters that dominate less than this number of samples
     #  would be remapped to their closest big sense
 
+    spacy_lang="en",
     max_batch_size=10,
     prediction_cutoff=200,
     bert_model='bert-large-uncased'
