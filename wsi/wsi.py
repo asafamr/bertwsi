@@ -124,3 +124,58 @@ class WordSenseInductor:
             print(msg)
 
         return scores2010['all'], scores2013['all']
+
+
+from typing import Dict, List, Tuple
+
+
+def perform_wsi_on_ds_gen(
+    lm: SLM,
+    ds_name: str,
+    gen: List[Tuple[str, str, str, str]],
+    wsisettings: WSISettings,
+    print_progress=False,
+) -> Dict[str, Dict[str, int]]:
+
+    ds_by_target = defaultdict(dict)
+    for pre, target, post, inst_id in gen:
+        lemma_pos = inst_id.rsplit('.', 1)[0]
+        ds_by_target[lemma_pos][inst_id] = (pre, target, post)
+
+    inst_id_to_sense = {}
+    gen = ds_by_target.items()
+    if print_progress:
+        gen = tqdm(gen, desc=f'predicting substitutes {ds_name}')
+    for lemma_pos, inst_id_to_sentence in gen:
+        inst_ids_to_representatives = \
+            lm.predict_sent_substitute_representatives(
+                inst_id_to_sentence=inst_id_to_sentence,
+                wsisettings=wsisettings,
+            )
+
+        clusters, statistics = cluster_inst_ids_representatives(
+            inst_ids_to_representatives=inst_ids_to_representatives,
+            max_number_senses=wsisettings.max_number_senses,
+            min_sense_instances=wsisettings.min_sense_instances,
+            disable_tfidf=wsisettings.disable_tfidf,
+            explain_features=True,
+        )
+        inst_id_to_sense.update(clusters)
+        if statistics:
+            logging.info('Sense cluster statistics:')
+            for idx, (rep_count, best_features, best_features_pmi, best_instance_id) in enumerate(statistics):
+                best_instance = ds_by_target[lemma_pos][best_instance_id]
+                nice_print_instance = f'{best_instance[0]} -{best_instance[1]}- {best_instance[2]}'
+                logging.info(
+                    f'Sense {idx}, # reps: {rep_count}, best feature words: {", ".join(best_features)}.'
+                    f', best feature words(PMI): {", ".join(best_features_pmi)}.'
+                    f' closest instance({best_instance_id}):\n---\n{nice_print_instance}\n---\n')
+
+    out_key_path = None
+    if wsisettings.debug_dir:
+        out_key_path = os.path.join(wsisettings.debug_dir, f'{wsisettings.run_name}-{ds_name}.key')
+
+    if print_progress:
+        print(f'writing {ds_name} key file to %s' % out_key_path)
+
+    return inst_id_to_sense
